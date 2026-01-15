@@ -1,8 +1,11 @@
 use crate::models::{
     ColumnSchema, Connection, ForeignKey, QueryResult, Schema, TableSchema,
+    TableData, TableDataRequest, FilterOperator, SortOrder, InsertRowRequest,
+    UpdateRowRequest, DeleteRowRequest,
 };
 use sqlx::mysql::{MySqlPool, MySqlPoolOptions, MySqlRow};
 use sqlx::{Column, Row, TypeInfo};
+use std::collections::HashMap;
 use std::time::Instant;
 use thiserror::Error;
 
@@ -294,6 +297,202 @@ impl MySQLAdapter {
             .map_err(|e| DatabaseError::Connection(e.to_string()))?;
 
         Ok("Connection successful".to_string())
+    }
+
+    pub async fn get_table_data(&self, request: &TableDataRequest) -> Result<TableData> {
+        self.switch_database(&request.database).await?;
+
+        // Build the base query
+        let mut query = format!("SELECT * FROM `{}`", request.table);
+        let mut where_conditions = Vec::new();
+
+        // Add filters
+        if let Some(filters) = &request.filters {
+            for filter in filters {
+                let condition = match &filter.operator {
+                    FilterOperator::Equals => format!("`{}` = '{}'", filter.column, filter.value),
+                    FilterOperator::NotEquals => format!("`{}` != '{}'", filter.column, filter.value),
+                    FilterOperator::GreaterThan => format!("`{}` > '{}'", filter.column, filter.value),
+                    FilterOperator::LessThan => format!("`{}` < '{}'", filter.column, filter.value),
+                    FilterOperator::GreaterThanOrEqual => format!("`{}` >= '{}'", filter.column, filter.value),
+                    FilterOperator::LessThanOrEqual => format!("`{}` <= '{}'", filter.column, filter.value),
+                    FilterOperator::Like => format!("`{}` LIKE '%{}%'", filter.column, filter.value),
+                    FilterOperator::NotLike => format!("`{}` NOT LIKE '%{}%'", filter.column, filter.value),
+                    FilterOperator::In => format!("`{}` IN ({})", filter.column, filter.value),
+                    FilterOperator::NotIn => format!("`{}` NOT IN ({})", filter.column, filter.value),
+                    FilterOperator::IsNull => format!("`{}` IS NULL", filter.column),
+                    FilterOperator::IsNotNull => format!("`{}` IS NOT NULL", filter.column),
+                };
+                where_conditions.push(condition);
+            }
+        }
+
+        if !where_conditions.is_empty() {
+            query.push_str(&format!(" WHERE {}", where_conditions.join(" AND ")));
+        }
+
+        // Add sorting
+        if let Some(sort_by) = &request.sort_by {
+            let order = match &request.sort_order {
+                Some(SortOrder::Desc) => "DESC",
+                _ => "ASC",
+            };
+            query.push_str(&format!(" ORDER BY `{}` {}", sort_by, order));
+        }
+
+        // Get total count before pagination
+        let count_query = if !where_conditions.is_empty() {
+            format!("SELECT COUNT(*) as count FROM `{}` WHERE {}", request.table, where_conditions.join(" AND "))
+        } else {
+            format!("SELECT COUNT(*) as count FROM `{}`", request.table)
+        };
+
+        let count_row: (i64,) = sqlx::query_as(&count_query)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| DatabaseError::Query(e.to_string()))?;
+        let total_rows = count_row.0 as u64;
+
+        // Add pagination
+        let offset = request.page * request.page_size;
+        query.push_str(&format!(" LIMIT {} OFFSET {}", request.page_size, offset));
+
+        // Execute query
+        let rows: Vec<MySqlRow> = sqlx::query(&query)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| DatabaseError::Query(e.to_string()))?;
+
+        if rows.is_empty() {
+            return Ok(TableData {
+                columns: vec![],
+                rows: vec![],
+                total_rows,
+            });
+        }
+
+        let columns: Vec<String> = rows[0]
+            .columns()
+            .iter()
+            .map(|col| col.name().to_string())
+            .collect();
+
+        let data_rows: Vec<HashMap<String, serde_json::Value>> = rows
+            .into_iter()
+            .map(|row| {
+                let mut row_data = HashMap::new();
+                for (i, col) in row.columns().iter().enumerate() {
+                    let col_name = col.name().to_string();
+                    let type_name = col.type_info().name();
+                    let value = Self::extract_value(&row, i, type_name);
+                    row_data.insert(col_name, value);
+                }
+                row_data
+            })
+            .collect();
+
+        Ok(TableData {
+            columns,
+            rows: data_rows,
+            total_rows,
+        })
+    }
+
+    pub async fn insert_row(&self, request: &InsertRowRequest) -> Result<()> {
+        self.switch_database(&request.database).await?;
+
+        let columns: Vec<String> = request.data.keys().cloned().collect();
+        let values: Vec<String> = columns.iter()
+            .map(|col| {
+                let value = &request.data[col];
+                Self::value_to_sql_string(value)
+            })
+            .collect();
+
+        let query = format!(
+            "INSERT INTO `{}` ({}) VALUES ({})",
+            request.table,
+            columns.iter().map(|c| format!("`{}`", c)).collect::<Vec<_>>().join(", "),
+            values.join(", ")
+        );
+
+        sqlx::query(&query)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| DatabaseError::Query(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn update_row(&self, request: &UpdateRowRequest) -> Result<u64> {
+        self.switch_database(&request.database).await?;
+
+        let set_clauses: Vec<String> = request.data.iter()
+            .map(|(col, value)| {
+                format!("`{}` = {}", col, Self::value_to_sql_string(value))
+            })
+            .collect();
+
+        let where_clauses: Vec<String> = request.where_clause.iter()
+            .map(|(col, value)| {
+                format!("`{}` = {}", col, Self::value_to_sql_string(value))
+            })
+            .collect();
+
+        let query = format!(
+            "UPDATE `{}` SET {} WHERE {}",
+            request.table,
+            set_clauses.join(", "),
+            where_clauses.join(" AND ")
+        );
+
+        let result = sqlx::query(&query)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| DatabaseError::Query(e.to_string()))?;
+
+        Ok(result.rows_affected())
+    }
+
+    pub async fn delete_rows(&self, request: &DeleteRowRequest) -> Result<u64> {
+        self.switch_database(&request.database).await?;
+
+        let where_clauses: Vec<String> = request.where_clause.iter()
+            .map(|(col, value)| {
+                format!("`{}` = {}", col, Self::value_to_sql_string(value))
+            })
+            .collect();
+
+        let query = format!(
+            "DELETE FROM `{}` WHERE {}",
+            request.table,
+            where_clauses.join(" AND ")
+        );
+
+        let result = sqlx::query(&query)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| DatabaseError::Query(e.to_string()))?;
+
+        Ok(result.rows_affected())
+    }
+
+    fn value_to_sql_string(value: &serde_json::Value) -> String {
+        match value {
+            serde_json::Value::Null => "NULL".to_string(),
+            serde_json::Value::Bool(b) => if *b { "TRUE" } else { "FALSE" }.to_string(),
+            serde_json::Value::Number(n) => n.to_string(),
+            serde_json::Value::String(s) => {
+                // Escape single quotes
+                let escaped = s.replace("'", "''");
+                format!("'{}'", escaped)
+            }
+            _ => {
+                // For objects and arrays, serialize to JSON string
+                let escaped = value.to_string().replace("'", "''");
+                format!("'{}'", escaped)
+            }
+        }
     }
 }
 

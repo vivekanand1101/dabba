@@ -1,7 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Connection } from '../types/connection';
-import type { AutocompleteData, Schema } from '../types/schema';
+import type { AutocompleteData, Schema, TableSchema } from '../types/schema';
 import type { QueryRequest, QueryResult } from '../types/query';
+import type {
+  TableData,
+  TableDataRequest,
+  InsertRowRequest,
+  UpdateRowRequest,
+  DeleteRowRequest,
+} from '../types/table';
 
 interface ConnectionApi {
   save(connection: Connection): Promise<void>;
@@ -65,5 +72,35 @@ interface DatabaseApi {
 export const databaseApi: DatabaseApi = {
   listDatabases(connectionId: string): Promise<string[]> {
     return invoke('list_databases', { connectionId });
+  },
+};
+
+interface TableApi {
+  getTableStructure(connectionId: string, database: string, table: string): Promise<TableSchema>;
+  getTableData(request: TableDataRequest): Promise<TableData>;
+  insertRow(request: InsertRowRequest): Promise<void>;
+  updateRow(request: UpdateRowRequest): Promise<number>;
+  deleteRows(request: DeleteRowRequest): Promise<number>;
+}
+
+export const tableApi: TableApi = {
+  getTableStructure(connectionId: string, database: string, table: string): Promise<TableSchema> {
+    return invoke('get_table_structure', { connectionId, database, table });
+  },
+
+  getTableData(request: TableDataRequest): Promise<TableData> {
+    return invoke('get_table_data', { request });
+  },
+
+  insertRow(request: InsertRowRequest): Promise<void> {
+    return invoke('insert_table_row', { request });
+  },
+
+  updateRow(request: UpdateRowRequest): Promise<number> {
+    return invoke('update_table_row', { request });
+  },
+
+  deleteRows(request: DeleteRowRequest): Promise<number> {
+    return invoke('delete_table_rows', { request });
   },
 };

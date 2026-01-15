@@ -3,6 +3,7 @@ import { useConnectionStore } from '../../store/connectionStore';
 import { useQueryStore } from '../../store/queryStore';
 import { databaseApi } from '../../services/tauriApi';
 import ConnectionList from '../ConnectionManager/ConnectionList';
+import TableViewerContainer from '../TableViewer/TableViewerContainer';
 
 export default function DatabaseExplorer() {
   const { connections, activeConnectionId, selectedDatabase, setSelectedDatabase, loadConnections } = useConnectionStore();
@@ -14,6 +15,7 @@ export default function DatabaseExplorer() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showConnections, setShowConnections] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   // Load connections on mount
   useEffect(() => {
@@ -143,6 +145,7 @@ export default function DatabaseExplorer() {
                     key={table}
                     className="px-3 py-2 text-sm rounded hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                     title={table}
+                    onClick={() => setSelectedTable(table)}
                   >
                     <svg
                       className="w-4 h-4 text-gray-500 flex-shrink-0"
@@ -256,6 +259,16 @@ export default function DatabaseExplorer() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Table Viewer */}
+      {selectedTable && activeConnectionId && selectedDatabase && (
+        <TableViewerContainer
+          connectionId={activeConnectionId}
+          database={selectedDatabase}
+          table={selectedTable}
+          onClose={() => setSelectedTable(null)}
+        />
       )}
     </div>
   );

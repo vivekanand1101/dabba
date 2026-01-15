@@ -34,6 +34,8 @@ vi.mock('./store/connectionStore', () => ({
     loadConnections: vi.fn(),
     deleteConnection: vi.fn(),
     setActiveConnection: vi.fn(),
+    selectedDatabase: null,
+    setSelectedDatabase: vi.fn(),
   })),
 }));
 

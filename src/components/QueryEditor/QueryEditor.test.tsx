@@ -46,6 +46,7 @@ describe('QueryEditor', () => {
 
     (useConnectionStore as any).mockReturnValue({
       activeConnectionId: 'test-conn-id',
+      selectedDatabase: 'test_db',
     });
 
     mockExecuteQuery.mockResolvedValue(undefined);
@@ -63,7 +64,7 @@ describe('QueryEditor', () => {
     await user.click(executeButton);
 
     await waitFor(() => {
-      expect(mockExecuteQuery).toHaveBeenCalledWith('test-conn-id', 'SELECT 2');
+      expect(mockExecuteQuery).toHaveBeenCalledWith('test-conn-id', 'SELECT 2', 'test_db');
     });
   });
 
@@ -156,6 +157,7 @@ describe('QueryEditor', () => {
   it('disables execute button when no connection', () => {
     (useConnectionStore as any).mockReturnValue({
       activeConnectionId: null,
+      selectedDatabase: null,
     });
 
     render(<QueryEditor />);

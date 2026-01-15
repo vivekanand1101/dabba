@@ -17,6 +17,8 @@ vi.mock('../store/connectionStore', () => ({
     deleteConnection: vi.fn(),
     activeConnectionId: null,
     setActiveConnection: vi.fn(),
+    selectedDatabase: null,
+    setSelectedDatabase: vi.fn(),
   }),
 }));
 
@@ -34,8 +36,8 @@ vi.mock('../store/queryStore', () => ({
 }));
 
 // Mock components
-vi.mock('../components/ConnectionManager/ConnectionList', () => ({
-  default: () => <div data-testid="connection-list">Connection List</div>,
+vi.mock('../components/DatabaseExplorer/DatabaseExplorer', () => ({
+  default: () => <div data-testid="database-explorer">Database Explorer</div>,
 }));
 
 vi.mock('../components/QueryEditor/QueryEditor', () => ({
@@ -65,10 +67,10 @@ describe('Resizable Panels', () => {
     expect(resizeHandles.length).toBeGreaterThan(0);
   });
 
-  it('renders connection list in a panel', () => {
+  it('renders database explorer in a panel', () => {
     render(<App />);
 
-    expect(screen.getByTestId('connection-list')).toBeInTheDocument();
+    expect(screen.getByTestId('database-explorer')).toBeInTheDocument();
   });
 
   it('renders query editor in a panel', () => {

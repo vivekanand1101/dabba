@@ -7,10 +7,13 @@ mod error;
 mod models;
 mod storage;
 
-use commands::AppState;
 use storage::connection_store::ConnectionStore;
 use std::sync::Mutex;
 use tauri::Manager;
+
+pub struct AppState {
+    pub connection_store: Mutex<ConnectionStore>,
+}
 
 fn main() {
     tauri::Builder::default()
@@ -49,6 +52,11 @@ fn main() {
             commands::get_schema,
             commands::get_autocomplete_data,
             commands::execute_query,
+            commands::get_table_structure,
+            commands::get_table_data,
+            commands::insert_table_row,
+            commands::update_table_row,
+            commands::delete_table_rows,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,6 +10,7 @@ describe('Resizable Panels Integration', () => {
     vi.mock('../store/connectionStore', () => ({
       useConnectionStore: () => ({
         activeConnectionId: 'test-conn',
+        selectedDatabase: 'test_db',
       }),
     }));
 
@@ -78,6 +79,8 @@ describe('Sidebar Resize Integration', () => {
         deleteConnection: vi.fn(),
         activeConnectionId: null,
         setActiveConnection: vi.fn(),
+        selectedDatabase: null,
+        setSelectedDatabase: vi.fn(),
       }),
     }));
   });
