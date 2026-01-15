@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-connection-1: #ef4444; /* red */
+  --color-connection-2: #f59e0b; /* amber */
+  --color-connection-3: #10b981; /* emerald */
+  --color-connection-4: #3b82f6; /* blue */
+  --color-connection-5: #8b5cf6; /* violet */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.connection-indicator {
+  border-left: 4px solid var(--connection-color);
+}
