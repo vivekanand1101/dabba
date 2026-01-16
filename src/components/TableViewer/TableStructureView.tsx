@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { tableApi } from '../../services/tauriApi';
 import type { TableSchema } from '../../types/schema';
 
@@ -17,11 +17,7 @@ export default function TableStructureView({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadTableStructure();
-  }, [connectionId, database, table]);
-
-  const loadTableStructure = async () => {
+  const loadTableStructure = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -32,7 +28,11 @@ export default function TableStructureView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [connectionId, database, table]);
+
+  useEffect(() => {
+    loadTableStructure();
+  }, [loadTableStructure]);
 
   return (
     <div className="h-full w-full bg-white flex flex-col">

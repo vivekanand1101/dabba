@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { tableApi } from '../../services/tauriApi';
 import { useTabStore } from '../../store/tabStore';
 import type { TableData, TableFilter } from '../../types/table';
@@ -34,11 +34,7 @@ export default function TableDataViewer({
   const [editingRow, setEditingRow] = useState<Record<string, any> | null>(null);
   const [deletingRows, setDeletingRows] = useState<Record<string, any>[] | null>(null);
 
-  useEffect(() => {
-    loadTableData();
-  }, [connectionId, database, table, page, pageSize, sortBy, sortOrder, filters]);
-
-  const loadTableData = async () => {
+  const loadTableData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -59,7 +55,11 @@ export default function TableDataViewer({
     } finally {
       setLoading(false);
     }
-  };
+  }, [connectionId, database, table, page, pageSize, filters, sortBy, sortOrder]);
+
+  useEffect(() => {
+    loadTableData();
+  }, [loadTableData]);
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
