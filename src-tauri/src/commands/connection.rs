@@ -1,11 +1,9 @@
 use crate::models::Connection;
-use crate::storage::connection_store::ConnectionStore;
-use std::sync::Mutex;
+use crate::AppState;
 use tauri::State;
 
-pub struct AppState {
-    pub connection_store: Mutex<ConnectionStore>,
-}
+#[cfg(test)]
+use crate::storage::connection_store::ConnectionStore;
 
 #[tauri::command]
 pub async fn save_connection(
