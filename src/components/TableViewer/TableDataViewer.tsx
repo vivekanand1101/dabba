@@ -24,7 +24,7 @@ export default function TableDataViewer({
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
   const [sortOrder, setSortOrder] = useState<SortOrder | undefined>(undefined);
   const [filters] = useState<TableFilter[]>([]); // TODO: Add filter UI later

@@ -42,9 +42,11 @@ function createDefaultTab(): Tab {
   };
 }
 
+const initialTab = createDefaultTab();
+
 export const useTabStore = create<TabStore>((set, get) => ({
-  tabs: [createDefaultTab()],
-  activeTabId: createDefaultTab().id,
+  tabs: [initialTab],
+  activeTabId: initialTab.id,
 
   createQueryTab: () => {
     const newTab: Tab = {
