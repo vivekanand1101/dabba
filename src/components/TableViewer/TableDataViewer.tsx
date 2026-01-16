@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { tableApi } from '../../services/tauriApi';
+import { useTabStore } from '../../store/tabStore';
 import type { TableData, TableFilter } from '../../types/table';
 import { SortOrder } from '../../types/table';
 import AddRowModal from './AddRowModal';
@@ -10,17 +11,14 @@ interface TableDataViewerProps {
   connectionId: string;
   database: string;
   table: string;
-  onClose: () => void;
-  onViewStructure: () => void;
 }
 
 export default function TableDataViewer({
   connectionId,
   database,
   table,
-  onClose,
-  onViewStructure,
 }: TableDataViewerProps) {
+  const { createTableStructureTab } = useTabStore();
   const [data, setData] = useState<TableData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,8 +106,8 @@ export default function TableDataViewer({
   const totalPages = data ? Math.ceil(data.total_rows / pageSize) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+    <>
+      <div className="h-full w-full bg-white flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-4">
@@ -128,7 +126,7 @@ export default function TableDataViewer({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={onViewStructure}
+              onClick={() => createTableStructureTab(connectionId, database, table)}
               className="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,16 +165,6 @@ export default function TableDataViewer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Refresh
-            </button>
-
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
             </button>
           </div>
         </div>
@@ -387,6 +375,6 @@ export default function TableDataViewer({
           onSuccess={loadTableData}
         />
       )}
-    </div>
+    </>
   );
 }
