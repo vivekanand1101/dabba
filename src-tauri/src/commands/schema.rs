@@ -63,8 +63,6 @@ pub async fn get_autocomplete_data(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_autocomplete_data_contains_keywords() {
         use crate::models::{AutocompleteData, Schema};

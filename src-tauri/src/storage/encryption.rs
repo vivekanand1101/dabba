@@ -12,6 +12,8 @@ use thiserror::Error;
 
 const NONCE_SIZE: usize = 12;
 const KEY_SIZE: usize = 32;
+
+#[allow(dead_code)]
 const MIN_SALT_SIZE: usize = 16;
 
 #[derive(Error, Debug)]
@@ -32,6 +34,7 @@ pub enum EncryptionError {
 pub type Result<T> = std::result::Result<T, EncryptionError>;
 
 /// Generate a random 32-byte encryption key
+#[allow(dead_code)]
 pub fn generate_key() -> [u8; KEY_SIZE] {
     let mut key = [0u8; KEY_SIZE];
     OsRng.fill_bytes(&mut key);
@@ -39,6 +42,7 @@ pub fn generate_key() -> [u8; KEY_SIZE] {
 }
 
 /// Derive a key from a password using Argon2
+#[allow(dead_code)]
 pub fn derive_key_from_password(password: &str, salt: &[u8]) -> Result<[u8; KEY_SIZE]> {
     if salt.len() < MIN_SALT_SIZE {
         return Err(EncryptionError::KeyDerivation(

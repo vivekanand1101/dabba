@@ -29,8 +29,6 @@ pub async fn list_databases(connection_id: String, state: State<'_, AppState>) -
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_list_databases_command_exists() {
         // This test just ensures the command compiles

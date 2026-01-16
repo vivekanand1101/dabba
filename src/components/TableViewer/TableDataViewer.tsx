@@ -62,18 +62,15 @@ export default function TableDataViewer({
   }, [loadTableData]);
 
   const handleSort = (column: string) => {
-    if (sortBy === column) {
-      // Toggle sort order
-      if (sortOrder === SortOrder.Asc) {
-        setSortOrder(SortOrder.Desc);
-      } else if (sortOrder === SortOrder.Desc) {
-        setSortBy(undefined);
-        setSortOrder(undefined);
-      } else {
-        setSortOrder(SortOrder.Asc);
-      }
-    } else {
+    if (sortBy !== column) {
       setSortBy(column);
+      setSortOrder(SortOrder.Asc);
+    } else if (sortOrder === SortOrder.Asc) {
+      setSortOrder(SortOrder.Desc);
+    } else if (sortOrder === SortOrder.Desc) {
+      setSortBy(undefined);
+      setSortOrder(undefined);
+    } else {
       setSortOrder(SortOrder.Asc);
     }
     setPage(0);

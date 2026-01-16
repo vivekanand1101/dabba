@@ -255,12 +255,11 @@ impl MySQLAdapter {
 
     fn extract_value(row: &MySqlRow, index: usize, type_name: &str) -> serde_json::Value {
         match type_name {
-            "BIGINT" | "INT" | "SMALLINT" | "TINYINT" => {
-                row.try_get::<i64, _>(index)
-                    .ok()
-                    .map(serde_json::Value::from)
-                    .unwrap_or(serde_json::Value::Null)
-            }
+            "BIGINT" | "INT" | "SMALLINT" | "TINYINT" => row
+                .try_get::<i64, _>(index)
+                .ok()
+                .map(serde_json::Value::from)
+                .unwrap_or(serde_json::Value::Null),
             "FLOAT" | "DOUBLE" => row
                 .try_get::<f64, _>(index)
                 .ok()
@@ -288,15 +287,6 @@ impl MySQLAdapter {
         let offset = page * page_size;
         let paginated_sql = format!("{} LIMIT {} OFFSET {}", sql, page_size, offset);
         self.execute_query(&paginated_sql).await
-    }
-
-    pub async fn test_connection(&self) -> Result<String> {
-        let _: (i32,) = sqlx::query_as("SELECT 1")
-            .fetch_one(&self.pool)
-            .await
-            .map_err(|e| DatabaseError::Connection(e.to_string()))?;
-
-        Ok("Connection successful".to_string())
     }
 
     pub async fn get_table_data(&self, request: &TableDataRequest) -> Result<TableData> {
@@ -480,18 +470,12 @@ impl MySQLAdapter {
     fn value_to_sql_string(value: &serde_json::Value) -> String {
         match value {
             serde_json::Value::Null => "NULL".to_string(),
-            serde_json::Value::Bool(b) => if *b { "TRUE" } else { "FALSE" }.to_string(),
+            serde_json::Value::Bool(true) => "TRUE".to_string(),
+            serde_json::Value::Bool(false) => "FALSE".to_string(),
             serde_json::Value::Number(n) => n.to_string(),
-            serde_json::Value::String(s) => {
-                // Escape single quotes
-                let escaped = s.replace("'", "''");
-                format!("'{}'", escaped)
-            }
-            _ => {
-                // For objects and arrays, serialize to JSON string
-                let escaped = value.to_string().replace("'", "''");
-                format!("'{}'", escaped)
-            }
+            serde_json::Value::String(s) => format!("'{}'", s.replace('\'', "''")),
+            // For objects and arrays, serialize to JSON string
+            _ => format!("'{}'", value.to_string().replace('\'', "''")),
         }
     }
 }

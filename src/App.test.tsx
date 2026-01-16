@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
+import { useTabStore } from './store/tabStore';
 
 // Mock Monaco Editor
 vi.mock('monaco-editor', () => ({
@@ -52,6 +53,14 @@ vi.mock('./store/queryStore', () => ({
 }));
 
 describe('App Shell', () => {
+  beforeEach(() => {
+    // Reset tab store state before each test
+    const store = useTabStore.getState();
+    // Close all tabs except one
+    while (store.tabs.length > 1) {
+      store.closeTab(store.tabs[store.tabs.length - 1].id);
+    }
+  });
   it('renders without crashing', () => {
     render(<App />);
     expect(screen.getByRole('main')).toBeInTheDocument();

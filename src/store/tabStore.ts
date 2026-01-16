@@ -31,7 +31,7 @@ interface TabActions {
 type TabStore = TabState & TabActions;
 
 function generateTabId(): string {
-  return `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `tab-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 function createDefaultTab(): Tab {
@@ -63,7 +63,7 @@ export const useTabStore = create<TabStore>((set, get) => ({
   createTableDataTab: (connectionId: string, database: string, table: string) => {
     const newTab: Tab = {
       id: generateTabId(),
-      title: `${table}`,
+      title: table,
       contentType: 'table-data',
       tableInfo: { connectionId, database, table },
     };
